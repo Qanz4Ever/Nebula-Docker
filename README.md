@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Qanz4Ever/Nebula-Docker/main/Assets/logo.png" alt="Nebula Docker Logo" width="200"/>
+  <img src="https://github.com/Qanz4Ever/Nebula-Docker/raw/refs/heads/main/Assets/logo" alt="Nebula Docker Logo" width="200"/>
   
   # 🌌 Nebula Docker
   
