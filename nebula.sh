@@ -32,13 +32,13 @@ PUBLIC_DIR="$WEB_DIR/public"
 LOG_FILE="$CONFIG_DIR/nebula.log"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 
-# GitHub raw links (ganti dengan link raw kamu nanti)
-GITHUB_RAW="https://raw.githubusercontent.com/mfsavana/nebula/main"
-SERVER_JS_URL="$GITHUB_RAW/server.js"
-PACKAGE_JSON_URL="$GITHUB_RAW/package.json"
-INDEX_HTML_URL="$GITHUB_RAW/index.html"
-STYLE_CSS_URL="$GITHUB_RAW/style.css"
-APP_JS_URL="$GITHUB_RAW/app.js"
+# GitHub raw links - UPDATED WITH YOUR LINKS
+GITHUB_RAW="https://raw.githubusercontent.com/Qanz4Ever/Nebula-Docker/refs/heads/main"
+SERVER_JS_URL="$GITHUB_RAW/Dashboard/server.js"
+PACKAGE_JSON_URL="$GITHUB_RAW/Dashboard/package.json"
+INDEX_HTML_URL="$GITHUB_RAW/Dashboard/public/index.html"
+STYLE_CSS_URL="$GITHUB_RAW/Dashboard/public/style.css"
+APP_JS_URL="$GITHUB_RAW/Dashboard/public/app.js"
 
 # Create necessary directories
 mkdir -p "$CONFIG_DIR"
@@ -105,6 +105,7 @@ show_banner() {
     echo '║     ╚═╝  ╚═══╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝ ║'
     echo '║                    DOCKER MANAGEMENT v1.0                ║'
     echo '║                   Created By © Mfsavana 2026             ║'
+    echo '║                     Powered by Qanz4Ever                 ║'
     echo '╚══════════════════════════════════════════════════════════╝'
     echo -e "${RESET}"
 }
@@ -779,20 +780,40 @@ backup_container() {
 
 # Download web panel files
 download_web_files() {
-    echo -e "${YELLOW}Downloading web panel files...${RESET}"
+    echo -e "${YELLOW}Downloading web panel files from GitHub...${RESET}"
+    echo -e "${CYAN}Repository: Qanz4Ever/Nebula-Docker${RESET}"
     
     # Download server.js
     if command -v curl &> /dev/null; then
+        echo -e "Downloading server.js..."
         curl -s -o "$WEB_DIR/server.js" "$SERVER_JS_URL"
+        
+        echo -e "Downloading package.json..."
         curl -s -o "$WEB_DIR/package.json" "$PACKAGE_JSON_URL"
+        
+        echo -e "Downloading index.html..."
         curl -s -o "$PUBLIC_DIR/index.html" "$INDEX_HTML_URL"
+        
+        echo -e "Downloading style.css..."
         curl -s -o "$PUBLIC_DIR/style.css" "$STYLE_CSS_URL"
+        
+        echo -e "Downloading app.js..."
         curl -s -o "$PUBLIC_DIR/app.js" "$APP_JS_URL"
+        
     elif command -v wget &> /dev/null; then
+        echo -e "Downloading server.js..."
         wget -q -O "$WEB_DIR/server.js" "$SERVER_JS_URL"
+        
+        echo -e "Downloading package.json..."
         wget -q -O "$WEB_DIR/package.json" "$PACKAGE_JSON_URL"
+        
+        echo -e "Downloading index.html..."
         wget -q -O "$PUBLIC_DIR/index.html" "$INDEX_HTML_URL"
+        
+        echo -e "Downloading style.css..."
         wget -q -O "$PUBLIC_DIR/style.css" "$STYLE_CSS_URL"
+        
+        echo -e "Downloading app.js..."
         wget -q -O "$PUBLIC_DIR/app.js" "$APP_JS_URL"
     else
         echo -e "${RED}Neither curl nor wget found. Please install one.${RESET}"
@@ -802,6 +823,20 @@ download_web_files() {
     # Check if files were downloaded
     if [ -f "$WEB_DIR/server.js" ] && [ -f "$PUBLIC_DIR/index.html" ]; then
         echo -e "${GREEN}✓ Web panel files downloaded successfully${RESET}"
+        echo -e "${GREEN}✓ Files saved to: $WEB_DIR${RESET}"
+        
+        # Make server.js executable
+        chmod +x "$WEB_DIR/server.js" 2>/dev/null
+        
+        # Show downloaded files
+        echo ""
+        echo -e "${CYAN}Downloaded files:${RESET}"
+        ls -la "$WEB_DIR/server.js"
+        ls -la "$WEB_DIR/package.json"
+        ls -la "$PUBLIC_DIR/index.html"
+        ls -la "$PUBLIC_DIR/style.css"
+        ls -la "$PUBLIC_DIR/app.js"
+        
         return 0
     else
         echo -e "${RED}✗ Failed to download web panel files${RESET}"
@@ -821,45 +856,78 @@ setup_web_panel() {
     echo -e "${CYAN}3) Restart Web Panel${RESET}"
     echo -e "${CYAN}4) Show Web Panel Status${RESET}"
     echo -e "${CYAN}5) Install/Update Web Panel Files${RESET}"
-    echo -e "${CYAN}6) Back to Main Menu${RESET}"
+    echo -e "${CYAN}6) View Web Panel Logs${RESET}"
+    echo -e "${CYAN}7) Back to Main Menu${RESET}"
     echo ""
     
-    read -p "Choose option [1-6]: " web_choice
+    read -p "Choose option [1-7]: " web_choice
     
     case $web_choice in
         1)
             # Check if node is installed
             if ! command -v node &> /dev/null; then
                 echo -e "${YELLOW}Node.js not found. Installing...${RESET}"
-                curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                sudo apt-get install -y nodejs
+                
+                # Detect OS and install Node.js
+                if [[ -f /etc/os-release ]]; then
+                    . /etc/os-release
+                    if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
+                        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+                        sudo apt-get install -y nodejs
+                    elif [[ "$ID" == "centos" || "$ID" == "rhel" || "$ID" == "fedora" ]]; then
+                        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+                        sudo yum install -y nodejs
+                    else
+                        echo -e "${RED}Please install Node.js manually${RESET}"
+                        read -p "Press Enter to continue..."
+                        clear_screen
+                        show_banner
+                        return
+                    fi
+                fi
             fi
             
             # Download files if they don't exist
             if [ ! -f "$WEB_DIR/server.js" ] || [ ! -f "$PUBLIC_DIR/index.html" ]; then
+                echo -e "${YELLOW}Web panel files not found. Downloading...${RESET}"
                 download_web_files
             fi
             
             # Install PM2 if not present
             if ! command -v pm2 &> /dev/null; then
+                echo -e "${YELLOW}Installing PM2 process manager...${RESET}"
                 npm install -g pm2
             fi
             
             # Install dependencies
+            echo -e "${YELLOW}Installing Node.js dependencies...${RESET}"
             cd "$WEB_DIR"
             npm install
             
-            # Start with PM2
-            pm2 start server.js --name "nebula-docker"
-            pm2 save
-            pm2 startup
+            # Check if already running
+            if pm2 list | grep -q "nebula-docker"; then
+                echo -e "${YELLOW}Web panel is already running. Restarting...${RESET}"
+                pm2 restart nebula-docker
+            else
+                # Start with PM2
+                pm2 start server.js --name "nebula-docker"
+                pm2 save
+                pm2 startup
+            fi
             
             # Get IP address
             IP=$(hostname -I | awk '{print $1}')
             
-            echo -e "${GREEN}✓ Web panel started successfully!${RESET}"
-            echo -e "${YELLOW}Access at: http://$IP:3000${RESET}"
-            echo -e "${YELLOW}Local access: http://localhost:3000${RESET}"
+            echo ""
+            echo -e "${GREEN}╔════════════════════════════════════════════╗${RESET}"
+            echo -e "${GREEN}║    Web Panel Started Successfully!        ║${RESET}"
+            echo -e "${GREEN}╚════════════════════════════════════════════╝${RESET}"
+            echo ""
+            echo -e "${CYAN}Access URLs:${RESET}"
+            echo -e "  ${WHITE}Local:   ${GREEN}http://localhost:3000${RESET}"
+            echo -e "  ${WHITE}Network: ${GREEN}http://$IP:3000${RESET}"
+            echo ""
+            echo -e "${YELLOW}Make sure firewall allows port 3000${RESET}"
             ;;
         2)
             pm2 stop nebula-docker
@@ -876,6 +944,13 @@ setup_web_panel() {
             download_web_files
             ;;
         6)
+            if [ -f "$WEB_DIR/logs/app.log" ]; then
+                tail -50 "$WEB_DIR/logs/app.log"
+            else
+                pm2 logs nebula-docker --lines 50
+            fi
+            ;;
+        7)
             clear_screen
             show_banner
             return
@@ -937,6 +1012,7 @@ main() {
             14) 
                 echo -e "${GREEN}Thank you for using Nebula Docker!${RESET}"
                 echo -e "${CYAN}Created By © Mfsavana 2026${RESET}"
+                echo -e "${CYAN}Repository: github.com/Qanz4Ever/Nebula-Docker${RESET}"
                 exit 0
                 ;;
             *)
