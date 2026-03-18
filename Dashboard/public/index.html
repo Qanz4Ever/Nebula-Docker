@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Docker - Container Management</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-cloud"></i>
+                <h1>Nebula Docker</h1>
+            </div>
+            <div class="header-info">
+                <div class="system-time" id="currentTime"></div>
+                <div class="version">v1.0</div>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-cubes"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Total Containers</h3>
+                    <div class="stat-value" id="totalContainers">0</div>
+                </div>
+            </div>
+            <div class="stat-card running">
+                <div class="stat-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Running</h3>
+                    <div class="stat-value" id="runningContainers">0</div>
+                </div>
+            </div>
+            <div class="stat-card stopped">
+                <div class="stat-icon">
+                    <i class="fas fa-stop-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Stopped</h3>
+                    <div class="stat-value" id="stoppedContainers">0</div>
+                </div>
+            </div>
+            <div class="stat-card system">
+                <div class="stat-icon">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>System</h3>
+                    <div class="stat-value" id="systemInfo">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <button class="btn btn-primary" onclick="showCreateModal()">
+                <i class="fas fa-plus"></i> Create Container
+            </button>
+            <button class="btn btn-secondary" onclick="refreshContainers()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <div class="auto-refresh">
+                <i class="fas fa-clock"></i>
+                <span id="refreshCountdown">5s</span>
+            </div>
+        </div>
+
+        <!-- System Info Bar -->
+        <div class="system-bar" id="systemBar">
+            <div class="sys-item">
+                <i class="fas fa-server"></i>
+                <span id="hostname">Loading...</span>
+            </div>
+            <div class="sys-item">
+                <i class="fas fa-memory"></i>
+                <span id="memoryUsage">Loading...</span>
+            </div>
+            <div class="sys-item">
+                <i class="fas fa-microchip"></i>
+                <span id="cpuCores">Loading...</span>
+            </div>
+            <div class="sys-item">
+                <i class="fas fa-network-wired"></i>
+                <span id="ipAddress">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Containers Table -->
+        <div class="table-container">
+            <table id="containersTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Image</th>
+                        <th>Created</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                        <th>Ports</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="8" class="loading">
+                            <i class="fas fa-circle-notch fa-spin"></i> Loading containers...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Created By © Mfsavana 2026. All rights reserved.</p>
+            <p class="docker-info">
+                <i class="fab fa-docker"></i> Nebula Docker v1.0
+            </p>
+        </footer>
+    </div>
+
+    <!-- Create Container Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Create New Container</h2>
+                <span class="close" onclick="closeCreateModal()">&times;</span>
+            </div>
+            <form id="createForm" onsubmit="createContainer(event)">
+                <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Container Name:</label>
+                    <input type="text" id="containerName" required pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]+" 
+                           title="Letters, numbers, dots, hyphens, underscores only">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-docker"></i> Image:</label>
+                    <select id="containerImage" required>
+                        <option value="">Select Image</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-microchip"></i> CPU Cores:</label>
+                        <input type="number" id="containerCPU" min="0.1" step="0.1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-memory"></i> Memory (MB):</label>
+                        <input type="number" id="containerMemory" min="128" step="64" value="512">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-network-wired"></i> Port Mapping (comma separated):</label>
+                    <input type="text" id="containerPorts" placeholder="e.g., 8080:80,8081:443">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-database"></i> Volume Mounts (comma separated):</label>
+                    <input type="text" id="containerVolumes" placeholder="e.g., /data:/var/lib/data">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-code"></i> Environment Variables (comma separated):</label>
+                    <input type="text" id="containerEnv" placeholder="e.g., ENV=production,DEBUG=true">
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Create Container
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="modal">
+        <div class="modal-content logs-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-terminal"></i> Container Logs</h2>
+                <span class="close" onclick="closeLogsModal()">&times;</span>
+            </div>
+            <div class="logs-container">
+                <pre id="containerLogs">Loading logs...</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
